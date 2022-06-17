@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "ts-node - Launch & debug",
+        "type": "node",
+        "request": "launch",
+        "runtimeArgs": ["-r", "ts-node/register"],
+        "runtimeExecutable": "node",
+        "args": ["--inspect", "${workspaceFolder}/src/index.ts"],
+        "cwd": "${workspaceRoot}",
+        "skipFiles": ["<node_internals>/**", "node_modules/**"]
+      }
+    ]
+  }
