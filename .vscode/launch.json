@@ -10,6 +10,14 @@
         "args": ["--inspect", "${workspaceFolder}/src/index.ts"],
         "cwd": "${workspaceRoot}",
         "skipFiles": ["<node_internals>/**", "node_modules/**"]
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Launch Program",
+        "program": "${workspaceFolder}/src/index.ts",
+        "preLaunchTask": "tsc: build - tsconfig.json",
+        "outFiles": ["${workspaceFolder}/out/**/*.js"]
       }
     ]
   }

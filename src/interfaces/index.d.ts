@@ -16,6 +16,10 @@ export interface UserSpaces {
     items: Space[]
 }
 
+export interface UserCollections {
+    items: Space[]
+}
+
 export interface Space {
     id: string
     uid: string

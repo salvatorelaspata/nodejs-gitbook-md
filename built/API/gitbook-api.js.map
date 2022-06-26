@@ -1,1 +1,0 @@
-{"version":3,"file":"gitbook-api.js","sourceRoot":"","sources":["../../src/API/gitbook-api.ts"],"names":[],"mappings":";;;AAAA,+BAA0B;AAC1B,iCAA+B;AAC/B,IAAA,eAAM,GAAE,CAAA;AAEF,IAAA,KAAuC,OAAO,CAAC,GAAG,EAAhD,eAAe,qBAAA,EAAE,eAAe,qBAAgB,CAAC;AAE5C,QAAA,UAAU,GAAG,eAAK,CAAC,MAAM,CAAC;IACnC,OAAO,EAAE,eAAe;IACxB,OAAO,EAAE,EAAE,aAAa,EAAE,SAAS,GAAG,eAAe,EAAE;CAC1D,CAAC,CAAC"}

@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  # db:
+  #   image: postgres:14.1-alpine
+  #   restart: always
+  #   environment:
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=postgres
+  #   ports:
+  #     - '5432:5432'
+  #   volumes: 
+  #     - db:/var/lib/postgresql/data
+  #     - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+    volumes: 
+      - cache:/data
+  api:
+    container_name: gitbook-api-to-md
+    build:
+      context: ../
+      target: production
+    image: gitbook-api-to-md
+    depends_on:
+      # - db
+      - cache
+    ports:
+      - 3000:3000
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    links:
+      # - db
+      - cache
+    volumes:
+      - ../src:/src
+volumes:
+  # db:
+  #   driver: local
+  cache:
+    driver: local
