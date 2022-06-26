@@ -15,10 +15,12 @@
         "axios": "^0.26.1",
         "dotenv": "^16.0.0",
         "global": "^4.4.0",
+        "json2md": "^1.12.0",
         "pino": "^7.11.0",
         "redis": "^4.0.6"
     },
     "devDependencies": {
+        "@types/json2md": "^1.5.1",
         "@types/node": "^17.0.8",
         "nodemon": "^2.0.15",
         "ts-node": "^10.7.0",

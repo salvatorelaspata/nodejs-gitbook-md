@@ -8,108 +8,152 @@ import {
     getSpaceContent,
 } from './services/gitbook/spaces';
 import pino from 'pino';
-
+import { gitbookDocumentToMd } from './services/gitbook/document';
+import json2md = require('json2md');
 const log = pino();
-// TODO - COMMON: Gestire token (Gitbook, Notion)
-// TODO - GITBOOK: FROM Gitbook API
+
+
 const initialize = async () => {
-    log.info('Initializing...');
-    const client = await redisClient();
-    // log.info('await redisClient()');
-    // let oReturn = [];
-    // Retrieve User Info
-    // Check if user is in redis
-    const user: User = JSON.parse(await client.get('user'));
-    // log.info('await client.get(user)');
-    if (!user) {
-        const { data: _ }: AxiosResponse<User> = await getLoggedUser;
-        await client.set('user', JSON.stringify(_));
-        // log.info('await getLoggedUser');
-    }
-    log.info(`User: ${JSON.stringify(user, null, 2)}`);
-    // Retrieve User Spaces
-    // Check if userSpaces is in redis
-    let spaces: Space[] = JSON.parse(await client.get('userSpaces'));
-    log.info(`UserSpaces: ${JSON.stringify(spaces, null, 2)}`);
-    if (!spaces) {
-        const resUserSpaces: AxiosResponse<UserSpaces> = await getUserSpaces;
-        client.set('userSpaces', JSON.stringify(resUserSpaces.data.items));
-        // log.info('await getLoggedUser');
-        spaces = resUserSpaces.data.items;
-    }
+    console.log('Initializing...');
+    // let client;
+    // try {
+    //     client = await redisClient();
+    // } catch (error) {
+    //     console.log(`Redis error: ${error}`);
+    // }
 
-    // https://www.youtube.com/watch?v=l2CA9FtW1Pw
-    // VEDERE VIDEO!
+    const { data: user }: AxiosResponse<User> = await getLoggedUser;
+    // console.log(`User: ${JSON.stringify(user, null, 2)}`);
 
-    // TODO - GITBOOK: Retrieve Collections
-    // const { data: { items: collections} }: AxiosResponse<UserCollections> = await getUserCollections;
-    if (spaces.length > 0) {
-        log.info(`spaces.length: ${spaces.length}`);
-        // for (let index = 0; index < spaces.length; index++) {
-        await Promise.all(spaces.map(async (e) => {
-            // log.info('spaces.length > 0');
-            // const returned = await Promise.all(spaces.map(async (e: Space) => {
+    const { data: { items: spaces } }: AxiosResponse<UserSpaces> = await getUserSpaces;
+    // console.log(`spaces: ${JSON.stringify(spaces, null, 2)}`);
 
-            // for await (const e of spaces) {
-            // const e = spaces[index];
-            // For Each Spaces Retrieve Space General Content
-            //Check if space content is in redis
-            let space: Spaces = JSON.parse(await client.get(`spaceContent_${e.id}`));
-            // log.info(`await client.get(spaceContent_${e.id})`);
-            if (!space) {
-                const spaceContent: AxiosResponse<Spaces> = await getSpaceContent(e.id);
-                await client.set(`spaceContent_${e.id}`, JSON.stringify(spaceContent.data));
-                space = spaceContent.data;
-            }
-
-            if (space.pages.length > 0 && e.id === 'UULCWDT5W9w2sMu9EQY0') { // '-MM7UqEjtRty47ksGOvA'
-                // Retrieve Space Page Content - Implementate Recursive mode
-                log.info('space.pages.length > 0');
-                const pages = await _recursivePageContent(space.pages, e.id);
-                e.pages = pages;
-            }
-            return e; // oReturn.push({ ...e });
-        }));
-    }
-    // log.info({ returned });
-
-    // return oReturn;
+    return { user, spaces };
 };
 
 
-
-
-const _recursivePageContent = async (pages: Page[], currentSpace: string, rootPath: string = '') => {
-    // for (let index = 0; index < pages.length; index++) {
-    return await Promise.all(pages.map(async (e: Page) => {
-        // const e = pages[index];
-        debugger;
-        // const e = pages[index];
-        if (e.kind === 'sheet') {
-            try {
-                const res = await getPageContent(currentSpace, rootPath + e.path);
-                e.document = res.data.document;
-                log.info(` ***SUCCESS*** /v1/spaces/${currentSpace}/content/url/${rootPath}${e.path}`);
-            } catch (error) {
-                log.error(` ***ERROR**** /v1/spaces/${currentSpace}/content/url/${rootPath}${e.path}`);
-            }
+async function* getAsyncSpaceContent(spaces: Space[]) {
+    for (const space of spaces) {
+        let spaceContent;
+        try {
+            spaceContent = (await getSpaceContent(space.id)).data;
+        } catch (error) {
+            debugger;
         }
-
-        if (e.pages && Array.isArray(e.pages) && e.pages.length > 0 || e.kind !== 'link') {
-            // aggiorno la root path per il prossimo livello di ricorsione (se esiste)
-            rootPath = rootPath + e.path + '/';
-            await _recursivePageContent(e.pages, currentSpace, rootPath);
-        }
-        return e;
-    }));
-
+        yield { spaceId: space.id, content: spaceContent };
+    }
 }
+
+// create generator for pages recursively
+async function* getAsyncPageContent(spaceId: string, pages: Page[]) {
+    for await (const page of pages) {
+        // debugger;
+        try {
+            if (page.kind === 'sheet') {
+                yield (await getPageContent(spaceId, page.path)).data;
+            }
+            // else if (page.kind === 'group') {
+            //     const group = await getAsyncPageContent(spaceId, page.pages);
+            //     for await (const groupPage of group) {
+            //         // solo 1 livello
+            //         yield (await getPageContent(spaceId, `${page.path}/${groupPage.path}`)).data;
+            //     }
+            // }
+        } catch (error) {
+            // debugger;
+        }
+    }
+}
+
+// const _recursivePageContent = async (pages: Page[], currentSpace: string, rootPath: string = '') => {
+//     // for (let index = 0; index < pages.length; index++) {
+//     return await Promise.all(pages.map(async (e: Page) => {
+//         // const e = pages[index];
+//         debugger;
+//         // const e = pages[index];
+//         if (e.kind === 'sheet') {
+//             try {
+//                 const res = await getPageContent(currentSpace, rootPath + e.path);
+//                 e.document = res.data.document;
+//                 console.log(` ***SUCCESS*** /v1/spaces/${currentSpace}/content/url/${rootPath}${e.path}`);
+//             } catch (error) {
+//                 log.error(` ***ERROR**** /v1/spaces/${currentSpace}/content/url/${rootPath}${e.path}`);
+//             }
+//         }
+
+//         if (e.pages && Array.isArray(e.pages) && e.pages.length > 0 || e.kind !== 'link') {
+//             // aggiorno la root path per il prossimo livello di ricorsione (se esiste)
+//             rootPath = rootPath + e.path + '/';
+//             await _recursivePageContent(e.pages, currentSpace, rootPath);
+//         }
+//         return e;
+//     }));
+
+// }
+
 
 // Top Level await
 (async () => {
-    log.info('START')
-    const res = await initialize();
-    log.info('END')
-    // log.info(res);
+    console.log('START')
+    const { spaces, user } = await initialize();
+    console.log('initialize', spaces, user)
+    const filtered = spaces.filter((f: Space) => f.id === '-MM7UqEjtRty47ksGOvA')
+    const retrieve = getAsyncSpaceContent(filtered);
+    console.log('retrieve - start', retrieve)
+    const sSeet = new Set()
+
+    var fs = require('fs');
+    const now = new Date();
+    var dir = `C:\\Users\\salvatore\\Desktop\\dev\\nodejs-gitbook\\.tmp\\${now.valueOf()}`;
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+    const aReturn = [];
+    const aReturnDocument = [];
+    for await (const space of retrieve) {
+        console.log('space', space)
+        const retrievePage = getAsyncPageContent(space.spaceId, space.content.pages);
+        for await (const page of retrievePage) {
+            // console.log(`page: ${JSON.stringify(page, null, 2)}`);
+            aReturn.push(page);
+
+            console.log(page)
+            if (page) {
+                if (!fs.existsSync(dir + '\\' + space.spaceId)) {
+                    fs.mkdirSync(dir + '\\' + space.spaceId);
+                }
+                aReturnDocument.push({ dir: `${dir}\\${space.spaceId}\\${page.path}`, document: page.document, files: space.content.files });
+                page.document.nodes.map((n) => sSeet.add(n.type))
+            }
+            // debugger;
+        }
+    }
+    console.log(sSeet)
+    console.log(aReturn)
+    console.log(aReturnDocument)
+
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+
+    const aArray = []
+    aReturnDocument.map(({ dir, document, files }) => {
+        const md = gitbookDocumentToMd(document, files);
+        aArray.push(md);
+
+        console.log('md', JSON.stringify(md.filter((m => !!m)), null, 2))
+
+        console.log(json2md(md.filter((m => !!m))))
+        fs.writeFile(`${dir}.md`, json2md(md.filter((m => !!m))).toString(), function (err) {
+            if (err) throw err;
+            console.log('Saved!');
+        });
+    })
+    console.log(aArray)
+    debugger;
+    console.log('retrieve - end', retrieve)
+
+    console.log('END')
+    // console.log(res);
     // process.exit(1)
 })();

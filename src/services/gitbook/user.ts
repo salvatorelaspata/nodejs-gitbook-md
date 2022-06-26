@@ -1,5 +1,5 @@
 import { AxiosResponse } from 'axios';
-import { gitbookAPI } from '../../API/gitbook-api';
+import { gitbookAPI } from '../../api/gitbook-api';
 import { User, UserSpaces } from '../../interfaces/index';
 
 export const getLoggedUser: Promise<AxiosResponse<User>> = gitbookAPI.get('/v1/user');

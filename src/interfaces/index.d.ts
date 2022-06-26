@@ -60,7 +60,7 @@ export interface Page {
     path?: string
     pages?: Page[]
     href?: string
-    document?: Promise<AxiosResponse<Document>> | AxiosResponse<Document> | Document
+    document?: Promise<AxiosResponse<GitbookDocument>> | AxiosResponse<GitbookDocument> | GitbookDocument
 }
 /**
  * FILES
@@ -75,33 +75,33 @@ export interface File {
 /**
  * DOCUMENT
  */
-export interface Document {
-    object: string
+export interface GitbookDocument {
     data: DataDocument
-    nodes: NodesDocument[]
+    nodes: NodeDocument[]
+    object: string
 }
 
 export interface DataDocument {
     schemaVersion: number
 }
 
-export interface NodesDocument {
-    leaves?: Leaves[]
-    type?: string
-    isVoid?: boolean
+export interface NodeDocument {
     data?: DataDocument | Ref | {}
-    nodes?: NodeNestedDocument[]
+    leaves?: Leaves[]
+    type?: BlockType | string
+    isVoid?: boolean
+    nodes?: NodeDocument[]
+    object?: BlockType | string
 }
-
-export interface NodeNestedDocument {
-    object: string
-    leaves: Leaves[]
-}
+// export interface NodeNestedDocument {
+//     object: BlockType | string
+//     leaves: Leaves[]
+// }
 
 export interface Leaves {
     object: string
     text: string
-    marks: any[]
+    marks: Mark[]
     selections: any[]
 }
 
@@ -112,10 +112,16 @@ export interface Mark {
 }
 
 export interface Ref {
-    kind: string
-    url: string
+    url?: string
+    ref?: Image
+    syntax?: string
 }
 
-type BlockType = 'heading-1' | 'heading-2' | 'heading-3' | 'paragraph' | 'embed' | 'list-unordered' | 'images' | 'code' | 'hint'
+export interface Image {
+    file: string
+    kind: string
+}
+
+type BlockType = 'document' | 'block' | 'tabs' | 'blockquote' | 'heading-1' | 'heading-2' | 'heading-3' | 'paragraph' | 'embed' | 'list-ordered' | 'list-unordered' | 'images' | 'code' | 'hint'
 type BlockTypeSecondLevel = 'list-item' | 'image' | 'code-line'
 // Per le immagini verificare data.ref.file (viene tornato un'id (recuperare dalla proprietà file dello space))
