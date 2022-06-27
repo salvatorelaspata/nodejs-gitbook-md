@@ -10,9 +10,14 @@ import {
 import pino from 'pino';
 import { gitbookDocumentToMd } from './services/gitbook/document';
 import json2md = require('json2md');
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+
+// initialization
 const log = pino();
-
-
+const now = new Date();
+const aReturn = [];
+const aReturnDocument = [];
+const aMd = []
 const initialize = async () => {
     console.log('Initializing...');
     // let client;
@@ -44,13 +49,35 @@ async function* getAsyncSpaceContent(spaces: Space[]) {
     }
 }
 
+// slow
+const getAsyncSpaceContentNew = async (spaces: Space[]) => {
+    return Promise.all(spaces.map(async (space) => ({
+        spaceId: space.id,
+        content: (await getSpaceContent(space.id)).data
+    })));
+}
+
+const getAsyncSpaceContentNewOttimizzato = async (spaces: Space[]) => {
+    return Promise.all(spaces.map(async (space) => ({
+        spaceId: space.id,
+        content: (await getSpaceContent(space.id)).data
+    })));
+}
+
 // create generator for pages recursively
-async function* getAsyncPageContent(spaceId: string, pages: Page[]) {
+async function* getAsyncPageContent(spaceId: string, pages: Page[], path?: string) {
+    console.log(path)
     for await (const page of pages) {
         // debugger;
         try {
+            let currentPath = page.path
+            if (!!path) currentPath = `${path}/${page.path}`
             if (page.kind === 'sheet') {
-                yield (await getPageContent(spaceId, page.path)).data;
+                yield (await getPageContent(spaceId, currentPath)).data;
+            } else if (page.kind === 'group') {
+                yield* getAsyncPageContent(spaceId, page.pages, currentPath);
+            } else if (page.pages.length > 0) {
+                yield* getAsyncPageContent(spaceId, page.pages, currentPath);
             }
             // else if (page.kind === 'group') {
             //     const group = await getAsyncPageContent(spaceId, page.pages);
@@ -59,6 +86,23 @@ async function* getAsyncPageContent(spaceId: string, pages: Page[]) {
             //         yield (await getPageContent(spaceId, `${page.path}/${groupPage.path}`)).data;
             //     }
             // }
+        } catch (error) {
+            // debugger;
+        }
+    }
+}
+
+// create generator for pages recursively
+const getAsyncPageContentNew = async (spaceId: string, pages: Page[]) => {
+    for await (const page of pages) {
+        try {
+            if (page.kind === 'sheet') {
+                const ret = await getPageContent(spaceId, page.path);
+                return ret.data
+            } else if (page.kind === 'group') {
+                const group = await getAsyncPageContent(spaceId, page.pages);
+                return group;
+            }
         } catch (error) {
             // debugger;
         }
@@ -97,60 +141,52 @@ async function* getAsyncPageContent(spaceId: string, pages: Page[]) {
     console.log('START')
     const { spaces, user } = await initialize();
     console.log('initialize', spaces, user)
-    const filtered = spaces.filter((f: Space) => f.id === '-MM7UqEjtRty47ksGOvA')
-    const retrieve = getAsyncSpaceContent(filtered);
-    console.log('retrieve - start', retrieve)
-    const sSeet = new Set()
 
-    var fs = require('fs');
-    const now = new Date();
+    const filtered = spaces.filter((f: Space) =>
+        // f.id === '-MM7UqEjtRty47ksGOvA' || 
+        f.id === 'UULCWDT5W9w2sMu9EQY0');
+
+    debugger;
+    console.time('getAsyncSpaceContent');
+    const retrieve = await getAsyncSpaceContent(filtered);
+    console.timeEnd('getAsyncSpaceContent');
+
     var dir = `C:\\Users\\salvatore\\Desktop\\dev\\nodejs-gitbook\\.tmp\\${now.valueOf()}`;
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
-    }
-    const aReturn = [];
-    const aReturnDocument = [];
-    for await (const space of retrieve) {
-        console.log('space', space)
-        const retrievePage = getAsyncPageContent(space.spaceId, space.content.pages);
-        for await (const page of retrievePage) {
-            // console.log(`page: ${JSON.stringify(page, null, 2)}`);
-            aReturn.push(page);
+    !existsSync(dir) && mkdirSync(dir);
 
-            console.log(page)
+    for await (const space of retrieve) {
+        const retrievePage = getAsyncPageContent(space.spaceId, space.content.pages);
+        debugger;
+        for await (const page of retrievePage) {
+            aReturn.push(page);
             if (page) {
-                if (!fs.existsSync(dir + '\\' + space.spaceId)) {
-                    fs.mkdirSync(dir + '\\' + space.spaceId);
-                }
-                aReturnDocument.push({ dir: `${dir}\\${space.spaceId}\\${page.path}`, document: page.document, files: space.content.files });
-                page.document.nodes.map((n) => sSeet.add(n.type))
+                !existsSync(`${dir}\\${space.spaceId}`) && mkdirSync(`${dir}\\${space.spaceId}`);
+
+                aReturnDocument.push({
+                    dir: `${dir}\\${space.spaceId}\\${page.path}`,
+                    document: page.document,
+                    files: space.content.files
+                })
             }
-            // debugger;
         }
     }
-    console.log(sSeet)
-    console.log(aReturn)
-    console.log(aReturnDocument)
 
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
-    }
 
-    const aArray = []
-    aReturnDocument.map(({ dir, document, files }) => {
-        const md = gitbookDocumentToMd(document, files);
-        aArray.push(md);
+    // aReturnDocument.map(({ dir, document, files }) => {
+    //     const md = gitbookDocumentToMd(document, files);
+    //     aMd.push(md);
 
-        console.log('md', JSON.stringify(md.filter((m => !!m)), null, 2))
+    //     console.log('md', JSON.stringify(md.filter((m => !!m)), null, 2))
+    //     console.log(json2md(md.filter((m => !!m))))
 
-        console.log(json2md(md.filter((m => !!m))))
-        fs.writeFile(`${dir}.md`, json2md(md.filter((m => !!m))).toString(), function (err) {
-            if (err) throw err;
-            console.log('Saved!');
-        });
-    })
-    console.log(aArray)
-    debugger;
+    //     try {
+    //         writeFileSync(`${dir}.md`, json2md(md.filter((m => !!m))).toString());
+    //         console.log(`${dir}.md - Saved!`)
+    //     } catch (error) {
+    //         console.log(`${dir}.md - Error! ${error}`)
+    //     }
+    // })
+
     console.log('retrieve - end', retrieve)
 
     console.log('END')

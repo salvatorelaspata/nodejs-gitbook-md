@@ -6,6 +6,7 @@ export const gitbookDocumentToMd = (document: GitbookDocument, file: File[]): an
         node => {
             const typeMd = generateTypeMd(node, file);
             if (Array.isArray(typeMd)) {
+                debugger;
                 aTypeMd.push(...typeMd);
             } else {
                 aTypeMd.push(typeMd);
@@ -14,6 +15,8 @@ export const gitbookDocumentToMd = (document: GitbookDocument, file: File[]): an
     );
     return aTypeMd;
 }
+
+// gestire array (p)
 
 const generateTypeMd = (node: NodeDocument, files: File[]) => {
     switch (node.type) {
@@ -48,7 +51,7 @@ const generateTypeMd = (node: NodeDocument, files: File[]) => {
             }
         case 'hint':
         case 'blockquote':
-            console.log(node)
+            // debugger;
             // debugger;
             if (node.nodes[0].nodes[0].type !== 'list-item') {
                 return { blockquote: (node.nodes[0].nodes[0].leaves[0].text).toString() };
