@@ -15,16 +15,16 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs';
 // initialization
 const log = pino();
 const now = new Date();
-const aReturn = [];
+const dir = `C:\\Users\\salvatore\\Desktop\\dev\\nodejs-gitbook\\.tmp\\${now.valueOf()}`;
+
 const aReturnDocument = [];
-const aMd = []
 const initialize = async () => {
     console.log('Initializing...');
     // let client;
     // try {
     //     client = await redisClient();
     // } catch (error) {
-    //     console.log(`Redis error: ${error}`);
+    debugger;
     // }
 
     const { data: user }: AxiosResponse<User> = await getLoggedUser;
@@ -57,84 +57,30 @@ const getAsyncSpaceContentNew = async (spaces: Space[]) => {
     })));
 }
 
-const getAsyncSpaceContentNewOttimizzato = async (spaces: Space[]) => {
-    return Promise.all(spaces.map(async (space) => ({
-        spaceId: space.id,
-        content: (await getSpaceContent(space.id)).data
-    })));
-}
-
 // create generator for pages recursively
 async function* getAsyncPageContent(spaceId: string, pages: Page[], path?: string) {
     console.log(path)
     for await (const page of pages) {
-        // debugger;
         try {
             let currentPath = page.path
             if (!!path) currentPath = `${path}/${page.path}`
-            if (page.kind === 'sheet') {
-                yield (await getPageContent(spaceId, currentPath)).data;
-            } else if (page.kind === 'group') {
+            if (page.kind === 'group') {
+                !existsSync(`${dir}\\${spaceId}\\${currentPath}`) && mkdirSync(`${dir}\\${spaceId}\\${currentPath}`);
                 yield* getAsyncPageContent(spaceId, page.pages, currentPath);
-            } else if (page.pages.length > 0) {
-                yield* getAsyncPageContent(spaceId, page.pages, currentPath);
+            } else if (page.kind === 'sheet') {
+                if (page.pages.length > 0) {
+                    !existsSync(`${dir}\\${spaceId}\\${currentPath}`) && mkdirSync(`${dir}\\${spaceId}\\${currentPath}`);
+                    yield* getAsyncPageContent(spaceId, page.pages, currentPath);
+                }
+                yield { ...(await getPageContent(spaceId, currentPath)).data, currentPath: `${dir}\\${spaceId}\\${currentPath}` };
+            } else {
+                console.log(`not supported: ${page.kind}`)
             }
-            // else if (page.kind === 'group') {
-            //     const group = await getAsyncPageContent(spaceId, page.pages);
-            //     for await (const groupPage of group) {
-            //         // solo 1 livello
-            //         yield (await getPageContent(spaceId, `${page.path}/${groupPage.path}`)).data;
-            //     }
-            // }
         } catch (error) {
-            // debugger;
+            debugger;
         }
     }
 }
-
-// create generator for pages recursively
-const getAsyncPageContentNew = async (spaceId: string, pages: Page[]) => {
-    for await (const page of pages) {
-        try {
-            if (page.kind === 'sheet') {
-                const ret = await getPageContent(spaceId, page.path);
-                return ret.data
-            } else if (page.kind === 'group') {
-                const group = await getAsyncPageContent(spaceId, page.pages);
-                return group;
-            }
-        } catch (error) {
-            // debugger;
-        }
-    }
-}
-
-// const _recursivePageContent = async (pages: Page[], currentSpace: string, rootPath: string = '') => {
-//     // for (let index = 0; index < pages.length; index++) {
-//     return await Promise.all(pages.map(async (e: Page) => {
-//         // const e = pages[index];
-//         debugger;
-//         // const e = pages[index];
-//         if (e.kind === 'sheet') {
-//             try {
-//                 const res = await getPageContent(currentSpace, rootPath + e.path);
-//                 e.document = res.data.document;
-//                 console.log(` ***SUCCESS*** /v1/spaces/${currentSpace}/content/url/${rootPath}${e.path}`);
-//             } catch (error) {
-//                 log.error(` ***ERROR**** /v1/spaces/${currentSpace}/content/url/${rootPath}${e.path}`);
-//             }
-//         }
-
-//         if (e.pages && Array.isArray(e.pages) && e.pages.length > 0 || e.kind !== 'link') {
-//             // aggiorno la root path per il prossimo livello di ricorsione (se esiste)
-//             rootPath = rootPath + e.path + '/';
-//             await _recursivePageContent(e.pages, currentSpace, rootPath);
-//         }
-//         return e;
-//     }));
-
-// }
-
 
 // Top Level await
 (async () => {
@@ -146,27 +92,29 @@ const getAsyncPageContentNew = async (spaceId: string, pages: Page[]) => {
         // f.id === '-MM7UqEjtRty47ksGOvA' || 
         f.id === 'UULCWDT5W9w2sMu9EQY0');
 
-    debugger;
-    console.time('getAsyncSpaceContent');
-    const retrieve = await getAsyncSpaceContent(filtered);
-    console.timeEnd('getAsyncSpaceContent');
+    const retrieve = getAsyncSpaceContent(filtered);
 
-    var dir = `C:\\Users\\salvatore\\Desktop\\dev\\nodejs-gitbook\\.tmp\\${now.valueOf()}`;
     !existsSync(dir) && mkdirSync(dir);
 
     for await (const space of retrieve) {
         const retrievePage = getAsyncPageContent(space.spaceId, space.content.pages);
-        debugger;
-        for await (const page of retrievePage) {
-            aReturn.push(page);
-            if (page) {
-                !existsSync(`${dir}\\${space.spaceId}`) && mkdirSync(`${dir}\\${space.spaceId}`);
 
-                aReturnDocument.push({
-                    dir: `${dir}\\${space.spaceId}\\${page.path}`,
-                    document: page.document,
-                    files: space.content.files
-                })
+        !existsSync(`${dir}\\${space.spaceId}`) && mkdirSync(`${dir}\\${space.spaceId}`);
+
+        for await (const page of retrievePage) {
+            if (page) {
+                // gestire tutto qui...
+                const md = gitbookDocumentToMd(page.document, space.content.files);
+                try {
+                    writeFileSync(`${page.currentPath}.md`, json2md(md.filter((m => !!m))).toString());
+                } catch (error) {
+                    debugger;
+                }
+                // aReturnDocument.push({
+                //     dir: page.currentPath, // `${dir}\\${space.spaceId}\\${page.path}`,
+                //     document: page.document,
+                //     files: space.content.files
+                // })
             }
         }
     }
@@ -174,16 +122,14 @@ const getAsyncPageContentNew = async (spaceId: string, pages: Page[]) => {
 
     // aReturnDocument.map(({ dir, document, files }) => {
     //     const md = gitbookDocumentToMd(document, files);
-    //     aMd.push(md);
 
-    //     console.log('md', JSON.stringify(md.filter((m => !!m)), null, 2))
-    //     console.log(json2md(md.filter((m => !!m))))
+    //     // console.log('md', JSON.stringify(md.filter((m => !!m)), null, 2))
+    //     // console.log(json2md(md.filter((m => !!m))))
 
     //     try {
     //         writeFileSync(`${dir}.md`, json2md(md.filter((m => !!m))).toString());
-    //         console.log(`${dir}.md - Saved!`)
     //     } catch (error) {
-    //         console.log(`${dir}.md - Error! ${error}`)
+    //         debugger;
     //     }
     // })
 
