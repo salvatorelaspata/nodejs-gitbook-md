@@ -15,7 +15,8 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs';
 // initialization
 const log = pino();
 const now = new Date();
-const dir = `C:\\Users\\salvatore\\Desktop\\dev\\nodejs-gitbook\\.tmp\\${now.valueOf()}`;
+// const dir = `C:\\Users\\salvatore\\Desktop\\dev\\nodejs-gitbook\\.tmp\\${now.valueOf()}`;
+const dir = `.\\${now.valueOf()}`;
 
 const aReturnDocument = [];
 const initialize = async () => {
