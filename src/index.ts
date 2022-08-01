@@ -45,10 +45,12 @@ async function* getAsyncSpaceContent (spaces: Space[]) {
 // create generator for pages recursively
 async function* getAsyncPageContent (spaceId: string, pages: Page[], path?: string) {
   for await (const page of pages) {
+    debugger;
     try {
       let currentPath = page.path
-      if (path) currentPath = `${path}/${page.path}`
+      if (path) currentPath = page.path // `${path}/${page.path}`
       if (page.kind === 'group') {
+        debugger;
         // !existsSync(`${dir}\\${spaceId}\\${currentPath}`) && mkdirSync(`${dir}\\${spaceId}\\${currentPath}`)
         await _createFolderIfNotExists(join(spaceId, currentPath))
         yield* getAsyncPageContent(spaceId, page.pages, currentPath)
@@ -60,7 +62,7 @@ async function* getAsyncPageContent (spaceId: string, pages: Page[], path?: stri
         }
         yield {
           ...(await getPageContent(spaceId, currentPath)).data,
-          currentPath: join(dir, spaceId, currentPath) // `${dir}\\${spaceId}\\${currentPath}` 
+          currentPath: join(dir, spaceId, currentPath) // `${dir}\\${spaceId}\\${currentPath}`
         }
       } else if (page.kind === 'link') {
         await _createFile(join(dir, spaceId, currentPath.replace('undefined', page.uid)), page.href)
@@ -69,7 +71,7 @@ async function* getAsyncPageContent (spaceId: string, pages: Page[], path?: stri
         console.log(`not supported: ${page.kind}`)
       }
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
   }
 }
@@ -115,14 +117,12 @@ const _createFile = async (path: string, content: string) => {
   console.log('initialize', spaces, user)
 
   const filtered = spaces.filter((f: Space) =>
-    f.id === '-MM7UqEjtRty47ksGOvA' ||
+    //   f.id === '-MM7UqEjtRty47ksGOvA' ||
     f.id === 'UULCWDT5W9w2sMu9EQY0')
-
-  const retrieve = getAsyncSpaceContent(filtered)
+  const retrieve = getAsyncSpaceContent(spaces)
 
   // !existsSync(dir) && mkdirSync(dir)
   await _createFolderIfNotExists('')
-
   console.log('retrieve - start')
 
   for await (const space of retrieve) {

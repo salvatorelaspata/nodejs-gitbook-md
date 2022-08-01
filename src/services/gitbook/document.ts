@@ -53,8 +53,7 @@ const generateTypeMd = (node: NodeDocument, files: File[]) => {
       }
     case 'hint':
     case 'blockquote':
-      // debugger
-      // debugger
+      debugger
       if (node.nodes[0].nodes[0].type !== 'list-item') {
         return { blockquote: (node.nodes[0].nodes[0].leaves[0].text).toString() }
       }
