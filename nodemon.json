@@ -2,6 +2,6 @@
     "watch": [
         "src"
     ],
-    "ext": "ts",
-    "exec": "ts-node ./src/index.ts | pino-pretty"
+    "ext": "js",
+    "exec": "node ./src/index.js & pino-pretty"
 }

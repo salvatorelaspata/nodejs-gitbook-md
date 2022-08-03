@@ -4,12 +4,12 @@ import { AxiosResponse } from 'axios'
 import { mkdir, writeFile, stat } from 'fs/promises'
 import { join } from 'path'
 import { Page, Space, User, UserSpaces } from './interfaces/index'
-import { getLoggedUser, getUserSpaces } from './services/gitbook/user'
+import { getLoggedUserTS, getUserSpacesTS } from './services/gitbook/user'
 import {
-  getPageContent,
-  getSpaceContent
+  getPageContentTS,
+  getSpaceContentTS
 } from './services/gitbook/spaces'
-import { gitbookDocumentToMd } from './services/gitbook/document'
+import { gitbookDocumentToMdTS } from './services/gitbook/document'
 // import { redisClient } from './services/redis/index'
 // import pino from 'pino'
 import json2md = require('json2md')
@@ -19,14 +19,16 @@ import json2md = require('json2md')
 const now = new Date()
 // const dir = `C:\\Users\\salvatore\\Desktop\\dev\\nodejs-gitbook\\.tmp\\${now.valueOf()}`
 // const dir = `.\\${now.valueOf()}`
-const dir = join(__dirname, '..', '.tmp', now.valueOf().toString())
-console.log(dir)
+console.log(__dirname)
+let dir = join(__dirname, '../tmp')
 
 const initialize = async () => {
   console.log('Initializing...')
-  const { data: user }: AxiosResponse<User> = await getLoggedUser
-  const { data: { items: spaces } }: AxiosResponse<UserSpaces> = await getUserSpaces
-
+  const { data: user }: AxiosResponse<User> = await getLoggedUserTS
+  const { data: { items: spaces } }: AxiosResponse<UserSpaces> = await getUserSpacesTS
+  debugger;
+  await _createFolderIfNotExists('')
+  await _createFolderIfNotExists(now.valueOf().toString());
   return { user, spaces }
 }
 
@@ -34,7 +36,7 @@ async function* getAsyncSpaceContent (spaces: Space[]) {
   for (const space of spaces) {
     let spaceContent
     try {
-      spaceContent = (await getSpaceContent(space.id)).data
+      spaceContent = (await getSpaceContentTS(space.id)).data
     } catch (error) {
       console.log(error)
     }
@@ -48,7 +50,7 @@ async function* getAsyncPageContent (spaceId: string, pages: Page[], path?: stri
     debugger;
     try {
       let currentPath = page.path
-      if (path) currentPath = page.path // `${path}/${page.path}`
+      if (path) currentPath = encodeURIComponent(page.path) // `${path}/${page.path}`
       if (page.kind === 'group') {
         debugger;
         // !existsSync(`${dir}\\${spaceId}\\${currentPath}`) && mkdirSync(`${dir}\\${spaceId}\\${currentPath}`)
@@ -61,7 +63,7 @@ async function* getAsyncPageContent (spaceId: string, pages: Page[], path?: stri
           yield* getAsyncPageContent(spaceId, page.pages, currentPath)
         }
         yield {
-          ...(await getPageContent(spaceId, currentPath)).data,
+          ...(await getPageContentTS(spaceId, currentPath)).data,
           currentPath: join(dir, spaceId, currentPath) // `${dir}\\${spaceId}\\${currentPath}`
         }
       } else if (page.kind === 'link') {
@@ -81,6 +83,7 @@ async function* getAsyncPageContent (spaceId: string, pages: Page[], path?: stri
  * @param path string - path to folder
  */
 const _createFolderIfNotExists = async (path: string) => {
+  debugger;
   const folderDest = join(dir, path)
   try {
     await stat(folderDest)
@@ -132,7 +135,7 @@ const _createFile = async (path: string, content: string) => {
 
     for await (const page of retrievePage) {
       if (page) {
-        const md = gitbookDocumentToMd(page.document, space.content.files)
+        const md = gitbookDocumentToMdTS(page.document, space.content.files)
         // try {
         //     writeFileSync(`${page.currentPath}.md`, json2md(md.filter((m => !!m))).toString())
         // } catch (error) {

@@ -1,6 +1,4 @@
-import { File, GitbookDocument, NodeDocument, Ref } from '../../interfaces'
-
-export const gitbookDocumentToMdTS = (document: GitbookDocument, file: File[]): any[] => {
+export const gitbookDocumentToMd = (document, file) => {
   const aTypeMd = []
   document.nodes && document.nodes.forEach(
     node => {
@@ -16,11 +14,11 @@ export const gitbookDocumentToMdTS = (document: GitbookDocument, file: File[]): 
 }
 
 // gestire array (p)
-const generateTypeMd = (node: NodeDocument, files: File[]) => {
+const generateTypeMd = (node, files) => {
   let referenceFile, finded
   // const { ref: { file } } =
   if (node.nodes && node.nodes.length > 0 && node.nodes[0].data) {
-    referenceFile = (node.nodes[0].data || { ref: { file: '' } }) as Ref
+    referenceFile = (node.nodes[0].data || { ref: { file: '' } })
     finded = files.find(f => f.uid === referenceFile) || { downloadURL: 'not working' }
   }
 
