@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AxiosResponse } from "axios";
 import { mkdir, writeFile, stat } from "fs/promises";
 import { basename, join } from "path";
@@ -126,12 +127,14 @@ const _createFile = async (path: string, content: string) => {
 	const { spaces, user } = await initialize();
 	console.log("initialize", spaces, user);
 
-	const filtered = spaces.filter(
-		(f: Space) =>
-			//   f.id === '-MM7UqEjtRty47ksGOvA' ||
-			f.id === "UULCWDT5W9w2sMu9EQY0"
+	// const filtered = spaces.filter(
+	// 	(f: Space) =>
+	// 		f.id === '-MM7UqEjtRty47ksGOvA' ||
+	// 		f.id === "UULCWDT5W9w2sMu9EQY0"
+	// );
+	const retrieve = getAsyncSpaceContent(
+		spaces.filter((f) => f.id === "-MkqnBY0KewmJ2OEkPZ3")
 	);
-	const retrieve = getAsyncSpaceContent(spaces);
 
 	// !existsSync(dir) && mkdirSync(dir)
 	await _createFolderIfNotExists("");

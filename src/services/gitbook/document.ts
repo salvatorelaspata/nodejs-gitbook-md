@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { File, GitbookDocument, NodeDocument, Ref } from "../../interfaces";
 
 export const gitbookDocumentToMdTS = (
@@ -43,8 +44,7 @@ const generateTypeMd = (node: NodeDocument, files: File[]) => {
 			return { [`h${type.split("-")[1]}`]: firstLeaves?.text };
 		// return `#`.repeat(parseInt(i)) + ` ${node.leaves[0].text}`
 		case "paragraph":
-			// const paragrafi = nodes && nodes?.map((n) => n.leaves && n.leaves.map(l => { p: l.text }))
-			return { p: firstLeaves?.text }; // paragrafi
+			return { p: firstLeaves?.text };
 		case "embed":
 			// const { url } = node.data as Ref
 			return { link: { title: node.data, source: node.data } };
@@ -67,15 +67,11 @@ const generateTypeMd = (node: NodeDocument, files: File[]) => {
 			}
 			break;
 		case "list-ordered":
-			// debugger
 			// nodes --> 'list-item'
 			return { ol: nodes?.map((n) => _listDemm(n)) };
 		case "list-unordered":
-			// debugger
 			// nodes --> 'list-item'
 			return { ul: nodes?.map((n) => _listDemm(n)) };
-		// case 'tabs':
-		// debugger
 		case "table":
 			return { p: "DEBUG::NOT_WORKING - TABLE" };
 		case "tabs":

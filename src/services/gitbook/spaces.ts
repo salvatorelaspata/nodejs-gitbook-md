@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AxiosResponse } from "axios";
 import { gitbookAPITS } from "../../api/gitbook-api";
 import { Spaces } from "../../interfaces/index";
