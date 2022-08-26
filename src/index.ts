@@ -1,6 +1,6 @@
 import { AxiosResponse } from "axios";
 import { mkdir, writeFile, stat } from "fs/promises";
-import { join } from "path";
+import { basename, join } from "path";
 import { Page, Space, User, UserSpaces } from "./interfaces/index";
 import { getLoggedUserTS, getUserSpacesTS } from "./services/gitbook/user";
 import { getPageContentTS, getSpaceContentTS } from "./services/gitbook/spaces";
@@ -15,8 +15,8 @@ import { homedir } from "os";
 const now = new Date();
 // const dir = `C:\\Users\\salvatore\\Desktop\\dev\\nodejs-gitbook\\.tmp\\${now.valueOf()}`
 // const dir = `.\\${now.valueOf()}`
-console.log(homedir());
-const dir = join(homedir(), "../tmp");
+console.log(basename(homedir()));
+const dir = join(basename(homedir()), "../tmp");
 
 const initialize = async () => {
 	console.log("Initializing...");
@@ -97,6 +97,7 @@ const _createFolderIfNotExists = async (path: string) => {
 			await mkdir(folderDest);
 		} catch (errorMkDir) {
 			console.log("[mkdir] _createFolderIfNotExists - error", errorMkDir);
+			throw Error("EROORS: [_createFolderIfNotExists]");
 		}
 	}
 };
@@ -113,7 +114,8 @@ const _createFile = async (path: string, content: string) => {
 		try {
 			await writeFile(path, content);
 		} catch (errorMkDir) {
-			console.log("[mkdir] _createFile - error", errorMkDir);
+			console.log("[writeFile] _createFile - error", errorMkDir);
+			throw Error("EROORS: [writeFile]");
 		}
 	}
 };

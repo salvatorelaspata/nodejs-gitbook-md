@@ -18,6 +18,7 @@ type BlockType =
 	| "document"
 	| "block"
 	| "tabs"
+	| "table"
 	| "blockquote"
 	| "heading-1"
 	| "heading-2"

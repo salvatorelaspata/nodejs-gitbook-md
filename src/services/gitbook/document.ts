@@ -76,6 +76,16 @@ const generateTypeMd = (node: NodeDocument, files: File[]) => {
 			return { ul: nodes?.map((n) => _listDemm(n)) };
 		// case 'tabs':
 		// debugger
+		case "table":
+			return { p: "DEBUG::NOT_WORKING - TABLE" };
+		case "tabs":
+			return { p: "DEBUG::NOT_WORKING - TABS" };
+		case "tabs-item":
+			return { p: "DEBUG::NOT_WORKING - TABS-ITEM" };
+		case "file":
+			return { p: "DEBUG::NOT_WORKING - FILE" };
+		case "drawing":
+			return { p: "DEBUG::NOT_WORKING - DRAWING" };
 		default:
 			console.log("default", node);
 			break;
