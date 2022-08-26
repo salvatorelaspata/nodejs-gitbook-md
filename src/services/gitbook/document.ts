@@ -1,76 +1,102 @@
-import { File, GitbookDocument, NodeDocument, Ref } from '../../interfaces'
+import { File, GitbookDocument, NodeDocument, Ref } from "../../interfaces";
 
-export const gitbookDocumentToMdTS = (document: GitbookDocument, file: File[]): any[] => {
-  const aTypeMd = []
-  document.nodes && document.nodes.forEach(
-    node => {
-      const typeMd = generateTypeMd(node, file)
-      if (Array.isArray(typeMd)) {
-        aTypeMd.push(...typeMd)
-      } else {
-        aTypeMd.push(typeMd)
-      }
-    }
-  )
-  return aTypeMd
-}
+export const gitbookDocumentToMdTS = (
+	document: GitbookDocument,
+	file: File[]
+): any[] => {
+	const aTypeMd: any[] = [];
+	document.nodes &&
+		document.nodes?.forEach((node) => {
+			const typeMd = generateTypeMd(node, file);
+			if (Array.isArray(typeMd)) {
+				aTypeMd.push(...typeMd);
+			} else {
+				aTypeMd.push(typeMd);
+			}
+		});
+	return aTypeMd;
+};
 
 // gestire array (p)
 const generateTypeMd = (node: NodeDocument, files: File[]) => {
-  let referenceFile, finded
-  // const { ref: { file } } =
-  if (node.nodes && node.nodes.length > 0 && node.nodes[0].data) {
-    referenceFile = (node.nodes[0].data || { ref: { file: '' } }) as Ref
-    finded = files.find(f => f.uid === referenceFile) || { downloadURL: 'not working' }
-  }
+	let referenceFile: string | Ref, finded;
+	const { nodes, type } = node;
+	const firstNode = nodes && nodes[0];
+	const firstLeaves = firstNode && firstNode.leaves && firstNode.leaves[0];
+	const fNode =
+		nodes && nodes.length > 0 && nodes[0].nodes && nodes[0].nodes[0];
+	// const { ref: { file } } =
+	if (nodes && nodes?.length > 0 && nodes[0].data) {
+		referenceFile = (nodes[0].data || { ref: { file: "" } }) as Ref;
+		finded = files.find((f) => f.uid === referenceFile) || {
+			downloadURL: "not working",
+		};
+	}
 
-  switch (node.type) {
-    case 'heading-1':
-    case 'heading-2':
-    case 'heading-3':
-    case 'heading-4':
-    case 'heading-5':
-    case 'heading-6':
-      return { [`h${node.type.split('-')[1]}`]: node.nodes[0].leaves[0].text }
-    // return `#`.repeat(parseInt(i)) + ` ${node.leaves[0].text}`
-    case 'paragraph':
-      // const paragrafi = node.nodes && node.nodes.map((n) => n.leaves && n.leaves.map(l => { p: l.text }))
-      return { p: node.nodes[0].leaves[0].text } // paragrafi
-    case 'embed':
-      // const { url } = node.data as Ref
-      return { link: { title: node.data, source: node.data } }
-    case 'images':
-      // node.nodes --> 'image'
-      return { img: finded.downloadURL }
-    case 'code':
-      // node.nodes --> 'code-line'
-      // const { syntax } = node.data as Ref
-      return {
-        code: {
-          language: node.data || '',
-          content: node.nodes.map((n) => n.nodes[0].leaves[0].text)
-        }
-      }
-    case 'hint':
-    case 'blockquote':
-      debugger
-      if (node.nodes[0].nodes[0].type !== 'list-item') {
-        return { blockquote: (node.nodes[0].nodes[0].leaves[0].text).toString() }
-      }
-      break
+	switch (type) {
+		case "heading-1":
+		case "heading-2":
+		case "heading-3":
+		case "heading-4":
+		case "heading-5":
+		case "heading-6":
+			return { [`h${type.split("-")[1]}`]: firstLeaves?.text };
+		// return `#`.repeat(parseInt(i)) + ` ${node.leaves[0].text}`
+		case "paragraph":
+			// const paragrafi = nodes && nodes?.map((n) => n.leaves && n.leaves.map(l => { p: l.text }))
+			return { p: firstLeaves?.text }; // paragrafi
+		case "embed":
+			// const { url } = node.data as Ref
+			return { link: { title: node.data, source: node.data } };
+		case "images":
+			// nodes --> 'image'
+			return { img: finded?.downloadURL };
+		case "code":
+			// nodes --> 'code-line'
+			// const { syntax } = node.data as Ref
+			return {
+				code: {
+					language: node.data || "",
+					content: nodes?.map((n) => _codeDemm(n)),
+				},
+			};
+		case "hint":
+		case "blockquote":
+			if (fNode && fNode.type !== "list-item" && fNode.leaves) {
+				return { blockquote: fNode.leaves[0].text.toString() };
+			}
+			break;
+		case "list-ordered":
+			// debugger
+			// nodes --> 'list-item'
+			return { ol: nodes?.map((n) => _listDemm(n)) };
+		case "list-unordered":
+			// debugger
+			// nodes --> 'list-item'
+			return { ul: nodes?.map((n) => _listDemm(n)) };
+		// case 'tabs':
+		// debugger
+		default:
+			console.log("default", node);
+			break;
+	}
+};
 
-    case 'list-ordered':
-      // debugger
-      // node.nodes --> 'list-item'
-      return { ol: node.nodes.map(n => n.nodes[0].nodes[0].leaves[0].text) }
-    case 'list-unordered':
-      // debugger
-      // node.nodes --> 'list-item'
-      return { ul: node.nodes.map(n => n.nodes[0].nodes[0].leaves[0].text) }
-    // case 'tabs':
-    // debugger
-    default:
-      console.log('default', node)
-      break
-  }
-}
+const _listDemm = (n: NodeDocument) => {
+	return n.nodes &&
+		n.nodes.length > 0 &&
+		n.nodes[0].nodes &&
+		n.nodes[0].nodes.length > 0 &&
+		n.nodes[0].nodes[0].leaves
+		? n.nodes[0].nodes[0].leaves[0].text
+		: "";
+};
+
+const _codeDemm = (n: NodeDocument) => {
+	return n.nodes &&
+		n.nodes.length > 0 &&
+		n.nodes[0].leaves &&
+		n.nodes[0].leaves.length > 0
+		? n.nodes[0].leaves[0].text
+		: "";
+};

@@ -1,4 +1,4 @@
 // import axios from 'axios'
 
-import { config } from 'dotenv'
-config()
+import { config } from "dotenv";
+config();

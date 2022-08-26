@@ -1,9 +1,10 @@
 {
-    "compilerOptions": {
-      "outDir": "./built",
-      "allowJs": true,
-      "target": "es5",
-      "sourceMap": true
-    },
-    "include": ["./src/**/*"]
+  "compilerOptions": {
+      "target": "esnext",
+      "module": "esnext",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "moduleResolution": "node"
+  }
 }
